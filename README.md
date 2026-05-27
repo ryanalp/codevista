@@ -20,6 +20,16 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## AI Integration
+
+This app now includes a sidebar assistant backed by the Google Gemini API. To enable AI queries, create a `.env.local` file at the project root and add:
+
+```bash
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+Then restart the development server.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

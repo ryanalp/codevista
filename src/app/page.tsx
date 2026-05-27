@@ -144,6 +144,7 @@ function WorkspaceDashboard() {
           <AISidebar
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
+            code={code}
           />
         </div>
 
