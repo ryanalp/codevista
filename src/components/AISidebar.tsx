@@ -13,9 +13,10 @@ interface Message {
 interface AISidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  code: string;
 }
 
-export function AISidebar({ isOpen, onClose }: AISidebarProps) {
+export function AISidebar({ isOpen, onClose, code }: AISidebarProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -25,6 +26,7 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
     },
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,29 +35,61 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
     }
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const newMsg: Message = {
       id: Date.now().toString(),
       role: "user",
       content: input,
     };
-    setMessages((prev) => [...prev, newMsg]);
-    setInput("");
 
-    setTimeout(() => {
+    const nextMessages = [...messages, newMsg];
+    setMessages(nextMessages);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: nextMessages,
+          code,
+        }),
+      });
+
+      const data = await response.json();
+
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
           content:
-            "I'm analyzing the current execution frame. The array `arr` just had an element popped.",
+            response.ok && typeof data.assistant === "string"
+              ? data.assistant
+              : `AI error: ${data.error ?? "Unexpected response"}`,
         },
       ]);
-    }, 1000);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content:
+            error instanceof Error
+              ? error.message
+              : "Unable to reach the AI service.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -135,8 +169,9 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
                 />
                 <button
                   type="submit"
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || isLoading}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-cyber disabled:opacity-50 disabled:hover:text-zinc-500 transition-colors"
+                  aria-label="Send AI query"
                 >
                   <Send size={14} />
                 </button>
