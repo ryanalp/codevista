@@ -9,6 +9,12 @@ export type TraceFrame = {
   step: number;
   line: number;
   variables: Variable[];
+  stdout?: string;
+};
+
+export type TraceResult = {
+  frames: TraceFrame[];
+  stdout: string;
 };
 
 export const mockCode = `def process_data():
@@ -17,13 +23,16 @@ export const mockCode = `def process_data():
     
     # Initialize array
     arr = [1, 2]
+    print("Initialized array:", arr)
     
     # Add elements
     arr.append(3)
     arr.append(4)
+    print("After append:", arr)
     
     # Remove element
     arr.pop(2)
+    print("Final result:", arr)
     
     return arr
 

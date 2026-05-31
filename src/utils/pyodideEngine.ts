@@ -1,4 +1,4 @@
-import type { TraceFrame } from "@/components/mockData";
+import type { TraceFrame, TraceResult } from "@/components/mockData";
 
 const PYODIDE_VERSION = "0.25.0";
 const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full`;
@@ -84,6 +84,16 @@ import sys
 USER_FILENAME = ${JSON.stringify(USER_CODE_FILENAME)}
 _trace_frames = []
 _step = 0
+_stdout_buffer = []
+
+
+class _CapturingStdout:
+    def write(self, text):
+        if text:
+            _stdout_buffer.append(text)
+
+    def flush(self):
+        pass
 
 
 def _serialize_value(val):
@@ -136,46 +146,81 @@ def _trace(frame, event, arg):
         return _trace
     if frame.f_code.co_filename != USER_FILENAME:
         return _trace
+
+    current_stdout = "".join(_stdout_buffer)
+    if _trace_frames:
+        _trace_frames[-1]["stdout"] = current_stdout
+
     _step += 1
     _trace_frames.append(
         {
             "step": _step,
             "line": frame.f_lineno,
             "variables": _locals_to_variables(frame),
+            "stdout": current_stdout,
         }
     )
     return _trace
 
 
 def _run_traced_user_code(source):
-    global _trace_frames, _step
+    global _trace_frames, _step, _stdout_buffer
     _trace_frames = []
     _step = 0
+    _stdout_buffer = []
     code = compile(source, USER_FILENAME, "exec")
     namespace = {"__name__": "__main__"}
+    original_stdout = sys.stdout
+    sys.stdout = _CapturingStdout()
     sys.settrace(_trace)
     try:
         exec(code, namespace, namespace)
     finally:
         sys.settrace(None)
-    return _trace_frames
+        sys.stdout = original_stdout
+
+    full_stdout = "".join(_stdout_buffer)
+    if _trace_frames:
+        _trace_frames[-1]["stdout"] = full_stdout
+
+    return {
+        "frames": _trace_frames,
+        "stdout": full_stdout,
+    }
 
 
 _result = _run_traced_user_code(USER_CODE)
 json.dumps(_result)
 `;
 
-function parseTraceFrames(raw: unknown): TraceFrame[] {
+function parseTraceFrames(raw: unknown): TraceResult {
   if (typeof raw !== "string") {
     throw new Error("Pyodide trace runner did not return JSON");
   }
 
   const parsed: unknown = JSON.parse(raw);
-  if (!Array.isArray(parsed)) {
-    throw new Error("Trace output is not an array");
+
+  let framesRaw: unknown[];
+  let stdout = "";
+
+  if (Array.isArray(parsed)) {
+    framesRaw = parsed;
+  } else if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "frames" in parsed
+  ) {
+    const result = parsed as { frames: unknown; stdout?: unknown };
+    if (!Array.isArray(result.frames)) {
+      throw new Error("Trace output frames is not an array");
+    }
+    framesRaw = result.frames;
+    stdout = typeof result.stdout === "string" ? result.stdout : "";
+  } else {
+    throw new Error("Trace output is not a valid trace result");
   }
 
-  return parsed.map((frame, index) => {
+  const frames = framesRaw.map((frame, index) => {
     if (
       typeof frame !== "object" ||
       frame === null ||
@@ -186,10 +231,11 @@ function parseTraceFrames(raw: unknown): TraceFrame[] {
       throw new Error(`Invalid trace frame at index ${index}`);
     }
 
-    const { step, line, variables } = frame as {
+    const { step, line, variables, stdout: frameStdout } = frame as {
       step: unknown;
       line: unknown;
       variables: unknown;
+      stdout?: unknown;
     };
 
     if (
@@ -203,6 +249,7 @@ function parseTraceFrames(raw: unknown): TraceFrame[] {
     return {
       step,
       line,
+      stdout: typeof frameStdout === "string" ? frameStdout : undefined,
       variables: variables.map((variable, varIndex) => {
         if (
           typeof variable !== "object" ||
@@ -267,6 +314,13 @@ function parseTraceFrames(raw: unknown): TraceFrame[] {
       }),
     };
   });
+
+  if (!stdout && frames.length > 0) {
+    const lastFrame = frames[frames.length - 1];
+    stdout = lastFrame.stdout ?? "";
+  }
+
+  return { frames, stdout };
 }
 
 /**
@@ -275,7 +329,7 @@ function parseTraceFrames(raw: unknown): TraceFrame[] {
  */
 export async function executePythonTrace(
   userCode: string,
-): Promise<TraceFrame[]> {
+): Promise<TraceResult> {
   if (!userCode.trim()) {
     throw new Error("No Python code to execute");
   }

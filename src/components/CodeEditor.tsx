@@ -93,7 +93,7 @@ export function CodeEditor({ code, activeLine, onChange }: CodeEditorProps) {
   }, [activeLine]);
 
   return (
-    <div className="flex flex-col h-full bg-matte border border-zinc-800 rounded-md overflow-hidden m-3 mt-0">
+    <div className="flex flex-col h-full bg-matte border border-zinc-800 rounded-md overflow-hidden m-2 md:m-3 mt-0">
       <div className="flex items-center h-10 bg-[#0D0D0F] border-b border-zinc-800 px-2 shrink-0">
         <div className="flex items-center space-x-2 px-3 py-1.5 bg-matte border-t border-x border-zinc-800 rounded-t-md border-t-cyber">
           <FileCode2 size={14} className="text-cyber" />
@@ -120,7 +120,7 @@ export function CodeEditor({ code, activeLine, onChange }: CodeEditorProps) {
             minimap: {
               enabled: false,
             },
-            fontSize: 14,
+            fontSize: 13,
             fontFamily: "'JetBrains Mono', monospace",
             padding: {
               top: 16,

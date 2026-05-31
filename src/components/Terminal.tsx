@@ -4,60 +4,78 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal as TerminalIcon, X, Minus } from "lucide-react";
 
-interface TerminalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-interface LogLine {
+export interface LogLine {
   id: string;
   type: "cmd" | "out" | "err" | "info";
   text: string;
 }
 
-const initialLogs: LogLine[] = [
+interface TerminalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  executionOutput?: string | null;
+  executionError?: string | null;
+  frameCount?: number;
+  isRunning?: boolean;
+}
+
+const welcomeLogs: LogLine[] = [
   {
-    id: "1",
+    id: "welcome-1",
     type: "info",
     text: "● CodeVista Terminal v0.1.0 — WASM Python runtime",
   },
   {
-    id: "2",
+    id: "welcome-2",
     type: "info",
-    text: "● Type `help` for available commands.",
-  },
-  {
-    id: "3",
-    type: "cmd",
-    text: "python main.py",
-  },
-  {
-    id: "4",
-    type: "out",
-    text: ">>> Executing trace...",
-  },
-  {
-    id: "5",
-    type: "out",
-    text: ">>> 7 frames captured",
-  },
-  {
-    id: "6",
-    type: "out",
-    text: ">>> Final result: [1, 2, 4]",
-  },
-  {
-    id: "7",
-    type: "info",
-    text: "● Process exited with code 0",
+    text: "● Run your code with Visualize Code to see print output here.",
   },
 ];
 
-export function Terminal({ isOpen, onClose }: TerminalProps) {
-  const [logs, setLogs] = useState<LogLine[]>(initialLogs);
+const STORAGE_KEY = "codevista-terminal-height";
+const MIN_HEIGHT = 120;
+const MAX_HEIGHT_RATIO = 0.75;
+const DEFAULT_HEIGHT = 280;
+
+function getInitialHeight(): number {
+  if (typeof window === "undefined") return DEFAULT_HEIGHT;
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    const parsed = parseInt(stored, 10);
+    if (!Number.isNaN(parsed)) {
+      return Math.min(
+        window.innerHeight * MAX_HEIGHT_RATIO,
+        Math.max(MIN_HEIGHT, parsed),
+      );
+    }
+  }
+  return window.innerWidth < 768
+    ? Math.round(window.innerHeight * 0.4)
+    : DEFAULT_HEIGHT;
+}
+
+function clampHeight(value: number): number {
+  const max = window.innerHeight * MAX_HEIGHT_RATIO;
+  return Math.min(max, Math.max(MIN_HEIGHT, value));
+}
+
+export function Terminal({
+  isOpen,
+  onClose,
+  executionOutput,
+  executionError,
+  frameCount = 0,
+  isRunning = false,
+}: TerminalProps) {
+  const [logs, setLogs] = useState<LogLine[]>(welcomeLogs);
   const [input, setInput] = useState("");
+  const [height, setHeight] = useState(getInitialHeight);
+  const [isResizing, setIsResizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastExecutionRef = useRef<string | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ y: 0, height: DEFAULT_HEIGHT });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -70,6 +88,125 @@ export function Terminal({ isOpen, onClose }: TerminalProps) {
       setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, String(height));
+  }, [height]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      e.preventDefault();
+      const clientY =
+        "touches" in e ? e.touches[0].clientY : e.clientY;
+      const delta = dragStartRef.current.y - clientY;
+      setHeight(clampHeight(dragStartRef.current.height + delta));
+    };
+
+    const onEnd = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, []);
+
+  const handleResizeStart = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
+  ) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    setIsResizing(true);
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    dragStartRef.current = { y: clientY, height };
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  useEffect(() => {
+    if (isRunning) {
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `run-${Date.now()}`,
+          type: "out",
+          text: ">>> Executing trace...",
+        },
+      ]);
+      lastExecutionRef.current = null;
+    }
+  }, [isRunning]);
+
+  useEffect(() => {
+    if (executionError) {
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          type: "err",
+          text: executionError,
+        },
+        {
+          id: `err-exit-${Date.now()}`,
+          type: "info",
+          text: "● Process exited with code 1",
+        },
+      ]);
+      lastExecutionRef.current = executionError;
+      return;
+    }
+
+    if (executionOutput === undefined || executionOutput === null) return;
+
+    const signature = `${frameCount}:${executionOutput}`;
+    if (lastExecutionRef.current === signature) return;
+    lastExecutionRef.current = signature;
+
+    const newLogs: LogLine[] = [
+      {
+        id: `frames-${Date.now()}`,
+        type: "out",
+        text: `>>> ${frameCount} frame${frameCount === 1 ? "" : "s"} captured`,
+      },
+    ];
+
+    if (executionOutput.trim()) {
+      executionOutput.split("\n").forEach((line, index) => {
+        newLogs.push({
+          id: `stdout-${Date.now()}-${index}`,
+          type: "out",
+          text: line || " ",
+        });
+      });
+    } else {
+      newLogs.push({
+        id: `stdout-empty-${Date.now()}`,
+        type: "info",
+        text: "● No print output",
+      });
+    }
+
+    newLogs.push({
+      id: `exit-${Date.now()}`,
+      type: "info",
+      text: "● Process exited with code 0",
+    });
+
+    setLogs((prev) => [...prev, ...newLogs]);
+  }, [executionOutput, executionError, frameCount]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,14 +236,14 @@ export function Terminal({ isOpen, onClose }: TerminalProps) {
       newLogs.push({
         id: id + "-s",
         type: "info",
-        text: "● WASM runtime: idle | Trace: loaded (7 frames)",
+        text: `● WASM runtime: ${isRunning ? "running" : "idle"} | Trace: ${frameCount} frame${frameCount === 1 ? "" : "s"}`,
       });
       setLogs(newLogs);
     } else if (cmd === "run") {
       newLogs.push({
         id: id + "-r",
         type: "out",
-        text: ">>> Re-executing trace... done.",
+        text: ">>> Use the Visualize Code button to re-run.",
       });
       setLogs(newLogs);
     } else if (cmd === "exit") {
@@ -132,29 +269,42 @@ export function Terminal({ isOpen, onClose }: TerminalProps) {
             opacity: 0,
           }}
           animate={{
-            height: 280,
+            height,
             opacity: 1,
           }}
           exit={{
             height: 0,
             opacity: 0,
           }}
-          transition={{
-            type: "spring",
-            stiffness: 280,
-            damping: 30,
-          }}
+          transition={
+            isResizing
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 280, damping: 30 }
+          }
           className="bg-matte border-t border-zinc-800 overflow-hidden shrink-0 flex flex-col"
         >
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize terminal"
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeStart}
+            className="h-2 shrink-0 cursor-row-resize group flex items-center justify-center bg-[#0D0D0F] border-b border-zinc-800 hover:bg-zinc-800/60 active:bg-zinc-800 transition-colors touch-none select-none"
+          >
+            <div className="w-12 h-1 rounded-full bg-zinc-700 group-hover:bg-zinc-500 group-active:bg-cyber/60 transition-colors" />
+          </div>
+
           <div className="h-9 bg-[#0D0D0F] border-b border-zinc-800 flex items-center justify-between px-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <TerminalIcon size={12} className="text-cyber" />
-              <span className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
+            <div className="flex items-center gap-2 min-w-0">
+              <TerminalIcon size={12} className="text-cyber shrink-0" />
+              <span className="text-xs font-mono text-zinc-300 uppercase tracking-wider truncate">
                 Terminal
               </span>
-              <span className="text-xs font-mono text-zinc-600">— bash</span>
+              <span className="text-xs font-mono text-zinc-600 hidden sm:inline">
+                — bash
+              </span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={onClose}
                 className="p-1 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors"
@@ -174,7 +324,7 @@ export function Terminal({ isOpen, onClose }: TerminalProps) {
 
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto px-4 py-2 font-mono text-xs leading-relaxed"
+            className="flex-1 overflow-y-auto px-3 md:px-4 py-2 font-mono text-xs leading-relaxed min-h-0"
             onClick={() => inputRef.current?.focus()}
           >
             {logs.map((log) => (
@@ -185,12 +335,12 @@ export function Terminal({ isOpen, onClose }: TerminalProps) {
                 <span
                   className={
                     log.type === "cmd"
-                      ? "text-zinc-100"
+                      ? "text-zinc-100 break-all"
                       : log.type === "err"
-                        ? "text-red-400"
+                        ? "text-red-400 break-all"
                         : log.type === "info"
-                          ? "text-amber/80"
-                          : "text-zinc-400"
+                          ? "text-amber/80 break-all"
+                          : "text-zinc-400 break-all"
                   }
                 >
                   {log.text}
@@ -208,7 +358,7 @@ export function Terminal({ isOpen, onClose }: TerminalProps) {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-zinc-100 font-mono text-xs caret-cyber"
+                className="flex-1 bg-transparent outline-none text-zinc-100 font-mono text-xs caret-cyber min-w-0"
                 spellCheck={false}
                 autoComplete="off"
               />

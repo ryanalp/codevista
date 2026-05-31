@@ -312,9 +312,9 @@ export default function VisualStage({
     : [];
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 border border-zinc-800 rounded-xl p-6 overflow-y-auto">
-      <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-3">
-        <h2 className="text-sm font-semibold tracking-wider text-zinc-400 uppercase">
+    <div className="flex flex-col h-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 sm:p-6 overflow-y-auto">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 border-b border-zinc-800 pb-3 gap-2">
+        <h2 className="text-xs sm:text-sm font-semibold tracking-wider text-zinc-400 uppercase truncate">
           Memory State Workspace
         </h2>
         <div className="text-xs bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-md border border-indigo-500/20 font-mono">
@@ -324,6 +324,22 @@ export default function VisualStage({
 
       {showGlobalChain && (
         <GlobalLinkedListChain chain={globalChain} />
+      )}
+
+      {currentFrame.stdout && currentFrame.stdout.trim() && (
+        <motion.section
+          layout
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 pb-6 border-b border-zinc-800"
+        >
+          <h3 className="text-xs font-bold tracking-widest text-cyan-400 uppercase mb-3">
+            Console Output
+          </h3>
+          <pre className="font-mono text-xs text-zinc-300 bg-zinc-900/80 border border-cyan-500/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-words">
+            {currentFrame.stdout.trimEnd()}
+          </pre>
+        </motion.section>
       )}
 
       <h3 className="text-xs font-bold tracking-widest text-zinc-500 uppercase mb-4">
