@@ -69,7 +69,7 @@ export function AISidebar({
         isMobileOverlay ? "w-full" : "m-3 mt-0 ml-0 w-full md:w-[336px]"
       }`}
     >
-      <div className="h-10 bg-[#0D0D0F] border-b border-zinc-800 flex items-center justify-between px-4 shrink-0 gap-2">
+      <div className="h-10 bg-obsidian border-b border-zinc-800 flex items-center justify-between px-4 shrink-0 gap-2">
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-amber" />
           <span className="text-xs font-mono text-zinc-300 uppercase tracking-wider">
@@ -111,7 +111,7 @@ export function AISidebar({
         ))}
       </div>
 
-      <div className="p-3 bg-[#0D0D0F] border-t border-zinc-800 shrink-0">
+      <div className="p-3 bg-obsidian border-t border-zinc-800 shrink-0">
         <form onSubmit={handleSubmit} className="relative">
           <input
             type="text"

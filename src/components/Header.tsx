@@ -5,6 +5,8 @@ import {
   PanelRightClose,
   Code2,
   Layers,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 type MobilePanel = "editor" | "workspace" | "ai";
@@ -18,6 +20,8 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   activePanel?: MobilePanel;
   onPanelChange?: (panel: MobilePanel) => void;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
 }
 
 export function Header({
@@ -29,6 +33,8 @@ export function Header({
   onToggleSidebar,
   activePanel = "editor",
   onPanelChange,
+  theme = "dark",
+  onToggleTheme,
 }: HeaderProps) {
   return (
     <header className="w-full flex flex-col border-b border-zinc-800/60 bg-obsidian shrink-0">
@@ -57,6 +63,16 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          {/* Theme Toggle */}
+          <button
+            onClick={onToggleTheme}
+            className="p-1.5 bg-matte border border-zinc-800/80 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/40 transition-all duration-200 shrink-0"
+            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+
           <button
             onClick={onToggleTerminal}
             className={`flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-md text-xs font-mono border transition-all duration-200 ${isTerminalOpen ? "bg-cyber/10 border-cyber/40 text-cyber" : "bg-matte border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700"}`}

@@ -281,7 +281,7 @@ export function Terminal({
               ? { duration: 0 }
               : { type: "spring", stiffness: 280, damping: 30 }
           }
-          className="bg-matte border-t border-zinc-800 overflow-hidden shrink-0 flex flex-col"
+          className="bg-[var(--terminal-bg)] border-t border-[var(--terminal-border)] overflow-hidden shrink-0 flex flex-col"
         >
           <div
             role="separator"
@@ -289,32 +289,32 @@ export function Terminal({
             aria-label="Resize terminal"
             onMouseDown={handleResizeStart}
             onTouchStart={handleResizeStart}
-            className="h-2 shrink-0 cursor-row-resize group flex items-center justify-center bg-[#0D0D0F] border-b border-zinc-800 hover:bg-zinc-800/60 active:bg-zinc-800 transition-colors touch-none select-none"
+            className="h-2 shrink-0 cursor-row-resize group flex items-center justify-center bg-[var(--terminal-header-bg)] border-b border-[var(--terminal-border)] hover:bg-zinc-800/20 active:bg-zinc-800/40 transition-colors touch-none select-none"
           >
-            <div className="w-12 h-1 rounded-full bg-zinc-700 group-hover:bg-zinc-500 group-active:bg-cyber/60 transition-colors" />
+            <div className="w-12 h-1 rounded-full bg-zinc-400/60 group-hover:bg-zinc-500 group-active:bg-cyber/60 transition-colors" />
           </div>
 
-          <div className="h-9 bg-[#0D0D0F] border-b border-zinc-800 flex items-center justify-between px-3 shrink-0">
+          <div className="h-9 bg-[var(--terminal-header-bg)] border-b border-[var(--terminal-border)] flex items-center justify-between px-3 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              <TerminalIcon size={12} className="text-cyber shrink-0" />
-              <span className="text-xs font-mono text-zinc-300 uppercase tracking-wider truncate">
+              <TerminalIcon size={12} className="text-[var(--terminal-cmd)] shrink-0" />
+              <span className="text-xs font-mono text-[var(--terminal-text)] opacity-90 uppercase tracking-wider truncate">
                 Terminal
               </span>
-              <span className="text-xs font-mono text-zinc-600 hidden sm:inline">
+              <span className="text-xs font-mono text-[var(--terminal-text)] opacity-60 hidden sm:inline">
                 — bash
               </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={onClose}
-                className="p-1 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors"
+                className="p-1 text-[var(--terminal-text)] opacity-60 hover:opacity-100 hover:bg-zinc-800/20 rounded transition-colors"
                 aria-label="Minimize terminal"
               >
                 <Minus size={12} />
               </button>
               <button
                 onClick={onClose}
-                className="p-1 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded transition-colors"
+                className="p-1 text-[var(--terminal-text)] opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-zinc-800/20 rounded transition-colors"
                 aria-label="Close terminal"
               >
                 <X size={12} />
@@ -330,17 +330,17 @@ export function Terminal({
             {logs.map((log) => (
               <div key={log.id} className="flex gap-2 py-0.5">
                 {log.type === "cmd" && (
-                  <span className="text-cyber select-none">$</span>
+                  <span className="text-[var(--terminal-cmd)] select-none">$</span>
                 )}
                 <span
                   className={
                     log.type === "cmd"
-                      ? "text-zinc-100 break-all"
+                      ? "text-[var(--terminal-text)] break-all font-medium"
                       : log.type === "err"
-                        ? "text-red-400 break-all"
+                        ? "text-[var(--terminal-err)] break-all"
                         : log.type === "info"
-                          ? "text-amber/80 break-all"
-                          : "text-zinc-400 break-all"
+                          ? "text-[var(--terminal-info)] break-all"
+                          : "text-[var(--terminal-text)] opacity-85 break-all"
                   }
                 >
                   {log.text}
@@ -352,13 +352,13 @@ export function Terminal({
               onSubmit={handleSubmit}
               className="flex gap-2 items-center pt-1"
             >
-              <span className="text-cyber select-none">$</span>
+              <span className="text-[var(--terminal-cmd)] select-none">$</span>
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-zinc-100 font-mono text-xs caret-cyber min-w-0"
+                className="flex-1 bg-transparent outline-none text-[var(--terminal-text)] font-mono text-xs caret-[var(--terminal-cmd)] min-w-0"
                 spellCheck={false}
                 autoComplete="off"
               />

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { CodeEditor } from "@/components/CodeEditor";
 import VisualStage from "@/components/VisualStage";
@@ -24,6 +24,21 @@ function WorkspaceDashboard() {
   const [traceData, setTraceData] = useState(mockTraceData);
   const [stdoutOutput, setStdoutOutput] = useState<string | null>(null);
   const [executionError, setExecutionError] = useState<string | null>(null);
+
+  // Theme state management
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  // Synchronize base theme with document root class list
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    } else {
+      root.classList.add("light");
+      root.classList.remove("dark");
+    }
+  }, [theme]);
 
   const handleVisualize = async () => {
     setIsRunning(true);
@@ -64,7 +79,7 @@ function WorkspaceDashboard() {
   const totalSteps = traceData.length || 1;
   const canStep = hasVisualized && traceData.length > 0;
 
-  const timelineControls = (
+  const getTimelineControls = () => (
     <div className="h-12 md:h-14 bg-matte border border-zinc-800 rounded-md flex items-center px-2 md:px-4 gap-2 md:gap-4 shrink-0">
       <div className="flex items-center gap-0.5 md:gap-1">
         <button
@@ -138,6 +153,8 @@ function WorkspaceDashboard() {
         onToggleSidebar={() => setIsSidebarOpen((v) => !v)}
         activePanel={activePanel}
         onPanelChange={handlePanelChange}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
       />
 
       <div className="flex-1 flex flex-col w-full overflow-hidden min-h-0">
@@ -151,6 +168,7 @@ function WorkspaceDashboard() {
               code={code}
               onChange={(val) => setCode(val || "")}
               activeLine={activeLine}
+              theme={theme}
             />
           </div>
 
@@ -166,7 +184,7 @@ function WorkspaceDashboard() {
                 hasVisualized={hasVisualized}
               />
             </div>
-            {timelineControls}
+            {getTimelineControls()}
           </div>
 
           <AISidebar

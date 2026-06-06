@@ -1,22 +1,137 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-obsidian: #0d0d0f;
-  --color-matte: #121214;
-  --color-cyber: #06b6d4;
-  --color-amber: #f59e0b;
+:root, .light {
+  /* Base Layout Colors */
+  --bg-obsidian: #f8fafc;        /* Main page background: Crisp light-gray (slate-50) */
+  --bg-matte: #ffffff;           /* Panel background: Crisp white */
+  --color-cyber: #0284c7;        /* Electric Blue accent */
+  --color-cyber-glow: rgba(2, 132, 199, 0.1);
+  --color-amber: #b45309;        /* Mid-dark amber for readability */
+  --color-amber-glow: rgba(180, 83, 9, 0.1);
+  --color-emerald: #047857;      /* Mid-dark emerald green for nodes */
+  --color-emerald-glow: rgba(4, 120, 87, 0.1);
+  --active-line-bg: rgba(2, 132, 199, 0.08);
+  --active-line-border: #0284c7;
+
+  /* Overriding standard Tailwind zinc palette for light mode */
+  --zinc-100: #0f172a;           /* dark charcoal text */
+  --zinc-200: #1e293b;
+  --zinc-300: #334155;           /* body text */
+  --zinc-400: #475569;
+  --zinc-500: #64748b;           /* muted text */
+  --zinc-600: #94a3b8;           /* dim text */
+  --zinc-700: #cbd5e1;           /* subtle border */
+  --zinc-800: #e2e8f0;           /* main border */
+  --zinc-900: #f1f5f9;           /* secondary card background */
+  --zinc-950: #ffffff;           /* panel background (white) */
+
+  /* Terminal Colors */
+  --terminal-bg: #f8fafc;        /* light grey slate */
+  --terminal-header-bg: #e2e8f0; /* header background */
+  --terminal-border: #cbd5e1;
+  --terminal-text: #1e293b;      /* dark text */
+  --terminal-cmd: #0284c7;
+  --terminal-err: #dc2626;
+  --terminal-info: #d97706;
+
+  /* Custom overrides for visualization colors in Light Mode */
+  --emerald-text: #047857;
+  --emerald-border: #059669;
+  --indigo-text: #4f46e5;
+  --cyan-text: #0284c7;
+}
+
+.dark {
+  /* Base Layout Colors */
+  --bg-obsidian: #0f0f1a;        /* Main page background: Deep Slate */
+  --bg-matte: #1a1a2e;           /* Panel background: Charcoal Slate */
+  --color-cyber: #06b6d4;        /* Cyan/Cyber Blue accent */
+  --color-cyber-glow: rgba(6, 182, 212, 0.25);
+  --color-amber: #f59e0b;        /* Glowing amber */
+  --color-amber-glow: rgba(245, 158, 11, 0.2);
+  --color-emerald: #10b981;      /* Glowing emerald green */
+  --color-emerald-glow: rgba(16, 185, 129, 0.2);
+  --active-line-bg: rgba(6, 182, 212, 0.15);
+  --active-line-border: #06b6d4;
+
+  /* Overriding standard Tailwind zinc palette for dark mode */
+  --zinc-100: #f4f4f5;           /* off-white text */
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;           /* body text */
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;           /* muted text */
+  --zinc-600: #52525b;           /* dim text */
+  --zinc-700: #27273f;           /* subtle border */
+  --zinc-800: #2e2e48;           /* main border */
+  --zinc-900: #16162a;           /* secondary card background */
+  --zinc-950: #0f0f1b;           /* deepest panel background */
+
+  /* Terminal Colors */
+  --terminal-bg: #12121e;
+  --terminal-header-bg: #0f0f1b;
+  --terminal-border: #2e2e48;
+  --terminal-text: #f4f4f5;
+  --terminal-cmd: #06b6d4;
+  --terminal-err: #f87171;
+  --terminal-info: #fbbf24;
+
+  /* Custom overrides for visualization colors in Dark Mode */
+  --emerald-text: #6ee7b7;
+  --emerald-border: #10b981;
+  --indigo-text: #818cf8;
+  --cyan-text: #22d3ee;
+}
+
+@theme {
+  --color-obsidian: var(--bg-obsidian);
+  --color-matte: var(--bg-matte);
+  --color-cyber: var(--color-cyber);
+  --color-amber: var(--color-amber);
+
+  /* Map custom properties to the Tailwind zinc palette */
+  --color-zinc-100: var(--zinc-100);
+  --color-zinc-200: var(--zinc-200);
+  --color-zinc-300: var(--zinc-300);
+  --color-zinc-400: var(--zinc-400);
+  --color-zinc-500: var(--zinc-500);
+  --color-zinc-600: var(--zinc-600);
+  --color-zinc-700: var(--zinc-700);
+  --color-zinc-800: var(--zinc-800);
+  --color-zinc-900: var(--zinc-900);
+  --color-zinc-950: var(--zinc-950);
+
+  /* Semantic UI color mappings for components */
+  --color-emerald-300: var(--emerald-text);
+  --color-emerald-400: var(--emerald-text);
+  --color-emerald-500: var(--emerald-border);
+  --color-emerald-600: var(--emerald-border);
+  --color-emerald-700: var(--emerald-border);
+  
+  --color-indigo-400: var(--indigo-text);
+  --color-indigo-500: var(--indigo-text);
+  
+  --color-cyan-400: var(--cyan-text);
+  --color-cyan-500: var(--cyan-text);
+
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 body {
-  background-color: #0d0d0f;
-  color: #f4f4f5;
+  background-color: var(--bg-obsidian);
+  color: var(--zinc-100);
   margin: 0;
   padding: 0;
 }
 
+/* Smooth layout transitions for theming */
+body, header, aside, section, footer, nav, button, p, h2, h3, span {
+  transition-property: background-color, border-color, color, box-shadow, text-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .active-line-highlight {
-  background-color: rgba(6, 182, 212, 0.15);
-  border-left: 2px solid #06b6d4;
+  background-color: var(--active-line-bg);
+  border-left: 2px solid var(--active-line-border);
 }
