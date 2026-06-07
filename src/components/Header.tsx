@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Play,
   Terminal as TerminalIcon,
@@ -40,7 +41,10 @@ export function Header({
     <header className="w-full flex flex-col border-b border-zinc-800/60 bg-obsidian shrink-0">
       <div className="h-12 md:h-14 w-full flex items-center justify-between px-3 md:px-4 gap-2">
         <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
-          <div className="flex items-center space-x-1.5 md:space-x-2 min-w-0">
+          <Link
+            href="/"
+            className="flex items-center space-x-1.5 md:space-x-2 min-w-0 hover:opacity-80 transition-opacity"
+          >
             <span className="font-mono text-zinc-500 tracking-wider text-xs md:text-sm hidden sm:inline">
               NOIRCODE
             </span>
@@ -48,7 +52,7 @@ export function Header({
             <span className="font-sans font-bold text-zinc-100 tracking-wide text-sm md:text-base truncate">
               CODEVISTA
             </span>
-          </div>
+          </Link>
 
           <div className="h-4 w-px bg-zinc-800 mx-1 hidden sm:block"></div>
 
