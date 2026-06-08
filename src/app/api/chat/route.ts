@@ -110,8 +110,8 @@ Answer questions clearly and concisely, referencing specific line numbers or var
 
   // 3. Build payload ----------------------------------------------------------
   const payload = {
-    // claude-3-5-haiku is fast, cheap, and available on all Anthropic plan tiers.
-    model: "claude-3-5-haiku-20241022",
+    // claude-sonnet-4-5 — user confirmed this works on their account.
+    model: "claude-sonnet-4-5",
     system: systemPrompt,
     messages: userAssistantMessages.map((m) => ({
       role: m.role,
