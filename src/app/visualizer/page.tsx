@@ -195,6 +195,7 @@ function WorkspaceDashboard() {
                 setActivePanel("workspace");
               }
             }}
+            codeContext={code}
           />
         </div>
 
@@ -207,6 +208,7 @@ function WorkspaceDashboard() {
             }
           }}
           isMobileOverlay
+          codeContext={code}
         />
 
         <Terminal

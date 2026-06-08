@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,6 +14,8 @@ type Message = {
 
 type RequestBody = {
   messages: Message[];
+  /** Raw code from the workspace editor. Optional — omitted if the editor is empty. */
+  codeContext?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -74,9 +76,12 @@ export async function POST(request: Request) {
     );
   }
 
+  // Destructure codeContext alongside messages.
+  const { messages: rawMessages, codeContext } = body;
+
   // Strip out any "system" role messages — the Anthropic Messages API expects
   // system content via a top-level `system` field, not inside the messages array.
-  const userAssistantMessages = body.messages.filter(
+  const userAssistantMessages = rawMessages.filter(
     (m) => m.role === "user" || m.role === "assistant",
   );
 
@@ -90,10 +95,24 @@ export async function POST(request: Request) {
     );
   }
 
+  // Build the system prompt. If the editor contains code, wrap it so the model
+  // can reason about exactly what the user is looking at.
+  const systemPrompt = codeContext?.trim()
+    ? `You are CodeVista's AI assistant. You help users understand their code execution traces, variable states, and control flow.
+
+Here is the user's current workspace code:
+\`\`\`python
+${codeContext.trim()}
+\`\`\`
+
+Answer questions clearly and concisely, referencing specific line numbers or variable names from the code above when relevant.`
+    : "You are CodeVista's AI assistant. Help users understand their code execution traces, variable states, and control flow. Answer clearly and concisely.";
+
   // 3. Build payload ----------------------------------------------------------
   const payload = {
-    // claude-3-haiku is universally available across all Anthropic plan tiers.
-    model: "claude-sonnet-4-5",
+    // claude-3-5-haiku is fast, cheap, and available on all Anthropic plan tiers.
+    model: "claude-3-5-haiku-20241022",
+    system: systemPrompt,
     messages: userAssistantMessages.map((m) => ({
       role: m.role,
       content: m.content,

@@ -14,12 +14,15 @@ interface AISidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobileOverlay?: boolean;
+  /** The current code in the workspace editor — sent to the AI on every message. */
+  codeContext?: string;
 }
 
 export function AISidebar({
   isOpen,
   onClose,
   isMobileOverlay = false,
+  codeContext = "",
 }: AISidebarProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -62,7 +65,7 @@ export function AISidebar({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: updatedMessages }),
+        body: JSON.stringify({ messages: updatedMessages, codeContext }),
       });
 
       if (!response.ok) {
