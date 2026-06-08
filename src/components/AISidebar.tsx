@@ -26,10 +26,12 @@ export function AISidebar({
       id: "1",
       role: "system",
       content:
-        "CodeVista AI Detective initialized. Ready to analyze execution traces.",
+        "You are CodeVista AI Detective. Answer user questions about code execution traces, state, and control flow using concise language.",
     },
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,29 +40,57 @@ export function AISidebar({
     }
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const newMsg: Message = {
       id: Date.now().toString(),
       role: "user",
       content: input,
     };
-    setMessages((prev) => [...prev, newMsg]);
-    setInput("");
 
-    setTimeout(() => {
+    const updatedMessages = [...messages, newMsg];
+    setMessages(updatedMessages);
+    setInput("");
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: updatedMessages }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || "AI request failed.");
+      }
+
+      const data = await response.json();
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.completion || "I could not generate a response.",
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error.";
+      setError(message);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content:
-            "I'm analyzing the current execution frame. The array `arr` just had an element popped.",
+          content: `Error: ${message}`,
         },
       ]);
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const panel = (
@@ -113,16 +143,22 @@ export function AISidebar({
 
       <div className="p-3 bg-obsidian border-t border-zinc-800 shrink-0">
         <form onSubmit={handleSubmit} className="relative">
+          {error ? (
+            <div className="mb-2 rounded-md border border-red-600 bg-red-950/40 px-3 py-2 text-xs text-red-200">
+              {error}
+            </div>
+          ) : null}
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about the trace..."
-            className="w-full bg-matte border border-zinc-800 rounded-md py-2 pl-3 pr-10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all"
+            placeholder={isLoading ? "Generating response..." : "Ask about the trace..."}
+            disabled={isLoading}
+            className="w-full bg-matte border border-zinc-800 rounded-md py-2 pl-3 pr-10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all disabled:cursor-not-allowed disabled:opacity-70"
           />
           <button
             type="submit"
-            disabled={!input.trim()}
+            disabled={!input.trim() || isLoading}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-cyber disabled:opacity-50 disabled:hover:text-zinc-500 transition-colors"
           >
             <Send size={14} />
