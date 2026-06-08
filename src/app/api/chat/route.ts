@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   // 3. Build payload ----------------------------------------------------------
   const payload = {
     // claude-3-haiku is universally available across all Anthropic plan tiers.
-    model: "claude-3-haiku-20240307",
+    model: "claude-sonnet-4-5",
     messages: userAssistantMessages.map((m) => ({
       role: m.role,
       content: m.content,
